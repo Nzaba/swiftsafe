@@ -1,0 +1,150 @@
+package Handling;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Base64;
+import javax.crypto.Cipher;
+import javax.crypto.spec.SecretKeySpec;
+import javax.swing.JFrame;
+import javax.swing.JOptionPane;
+ 
+public class AES {
+    
+    private static SecretKeySpec secretKey;
+    private static byte[] key;
+    private static String thesecret;
+    public static void loseSecretKey() {
+    	thesecret = "";
+    }
+    
+    //This method sets the secret key used to encrypt our documents.
+    public static void initSecretKey(String pw, String encrtKey) {
+    	thesecret = decrypt(encrtKey, pw);
+    }
+    
+    //Encrypts file and writes it out
+    public static void toEncrypt(File file, String path){
+        // This will reference one line at a time
+        String line = null;
+        try {
+            // FileReader reads text files in the default encoding.
+            FileReader fileReader = new FileReader(file);
+            
+            String newfileName = file.getName();
+            PrintWriter writer = new PrintWriter(path+newfileName, "UTF-8");
+            
+            BufferedReader bufferedReader = new BufferedReader(fileReader);
+	    
+	    //Read in line by line, encrypt, then write to file
+            while((line = bufferedReader.readLine()) != null) {
+                String encryptedString = AES.encrypt(line, thesecret) ;
+                writer.println(encryptedString);
+            }
+            writer.close();
+            bufferedReader.close();  
+        }
+        catch(IOException ex) {
+            System.out.println(
+			       "Error writing to file '"
+			       );
+	    
+        }
+    }
+    //Takes file path and decrypts it writes it out
+    public static void toDecrypt(File file, String path){
+	
+        // This will reference one line at a time
+        String line = null;
+        try {
+            // FileReader reads text files in the default encoding.
+            FileReader fileReader = new FileReader(file);
+            
+            String newfileName = "decrypted!_"+file.getName();
+            PrintWriter writer = new PrintWriter(path+newfileName, "UTF-8");
+            
+            BufferedReader bufferedReader = new BufferedReader(fileReader);
+	    
+	    //Read in line by line, encrypt, then write to file
+            while((line = bufferedReader.readLine()) != null) {
+                String encryptedString = AES.decrypt(line, thesecret) ;
+                writer.println(encryptedString);
+            }
+            writer.close();
+            bufferedReader.close();
+        }
+        catch(IOException ex) {
+            System.out.println(
+			       "Error writing to file '"
+			       );
+	    
+        }
+    }
+    
+    public static String getStringRepresentation(ArrayList<Character> list){    
+	StringBuilder builder = new StringBuilder(list.size());
+	for(Character ch: list){
+	    builder.append(ch);
+	}
+	return builder.toString();
+    }
+    
+    public static void setKey(String myKey)
+    {
+        MessageDigest sha = null;
+        try {
+            key = myKey.getBytes("UTF-8");
+            sha = MessageDigest.getInstance("SHA-1");
+            key = sha.digest(key);
+            key = Arrays.copyOf(key, 16);
+            secretKey = new SecretKeySpec(key, "AES");
+        }
+        catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        }
+        catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+    }
+    
+    public static String encrypt(String strToEncrypt, String secret)
+    {
+        try
+	    {
+		setKey(secret);
+		Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
+		cipher.init(Cipher.ENCRYPT_MODE, secretKey);
+		return Base64.getEncoder().encodeToString(cipher.doFinal(strToEncrypt.getBytes("UTF-8")));
+	    }
+        catch (Exception e)
+	    {
+		System.out.println("Error while encrypting: " + e.toString());
+	    }
+        return null;
+    }
+    
+    public static String decrypt(String strToDecrypt, String secret)
+    {
+        try
+	    {
+		setKey(secret);
+		Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
+		cipher.init(Cipher.DECRYPT_MODE, secretKey);
+		return new String(cipher.doFinal(Base64.getDecoder().decode(strToDecrypt)));
+	    }
+        catch (Exception e)
+	    {
+		System.out.println("Error while decrypting: " + e.toString());
+	    }
+        return null;
+    }
+}

@@ -1,0 +1,149 @@
+package Handling;
+import java.awt.Container;
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
+import java.util.ArrayList;
+import java.util.Arrays;
+
+import javax.swing.JFrame;
+import javax.swing.JOptionPane;
+import javax.swing.JPasswordField;
+import javax.swing.JTextField;
+
+import PasswordEncrypt.*;
+
+public class CreateNewUser {
+    private static byte[] theSalt;
+    
+    public static void  User(String username, char[] password, String SQ, char[] SA) throws NoSuchAlgorithmException, InvalidKeySpecException, IOException {
+	generateSalt();
+	String s = generateString();
+	String key1 = AES.encrypt(s, new String(password));
+	String key2 = AES.encrypt(s, new String(SA));
+	new File("Program Files/"+username).mkdir();
+	new File("Program Files/"+username+"/Finances").mkdir();
+	new File("Program Files/"+username+"/DocSafety").mkdir();
+	storeUser(username, encrpt(password), SQ, encrpt(SA), key1, key2);
+    }
+    public static void  User(String username, char[] password, String SQ, char[] SA, char[] oldSA, String oldKey1) throws NoSuchAlgorithmException, InvalidKeySpecException, IOException {
+	generateSalt();
+	File file = new File("Program Files/"+username+".file");
+	file.delete();
+	String oldKey = AES.decrypt(oldKey1, new String(oldSA));
+	String key1 = AES.encrypt(oldKey, new String(password));
+	String key2 = AES.encrypt(oldKey, new String(SA));
+	storeUser(username, encrpt(password), SQ, encrpt(SA), key1, key2);
+    }
+    
+    
+    public static void generateSalt() throws NoSuchAlgorithmException {
+	theSalt = PasswordEncryptionService.generateSalt();
+    }
+    public static void storeUser(String username, final byte[] password, String SQ, final byte[] SA,String key1, String key2) throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
+	final String s = "AAAmherst CollegeAAA";
+	char[] chars = new char[20];
+	
+	for(int i = 0; i<20; i++)
+	    chars[i] = s.charAt(i);
+	File file = new File("Program Files/"+username+".file");
+	
+	PrintWriter writer = new PrintWriter(file, "UTF-8");
+	writer.println(Base64.encodeBytes(PasswordEncryptionService.getEncryptedPassword(chars, theSalt)));
+	writer.println(username);
+	writer.println(Base64.encodeBytes(theSalt));
+	writer.println(Base64.encodeBytes(password));
+	writer.println(SQ);
+	writer.println(Base64.encodeBytes(SA));
+	writer.println(key1);
+	writer.println(key2);
+	writer.println("-----------------------|$:~:$|-----------------------");
+	writer.close();		
+	
+    }
+    public static byte[] encrpt(char[] password) throws NoSuchAlgorithmException, InvalidKeySpecException {
+	return PasswordEncryptionService.getEncryptedPassword(password, theSalt);
+    }
+    public static boolean isValid(char[] pass) {
+	if(pass.length < 8 || pass.length > 25) {
+	    return false;
+	}
+	char[] specialCh = {'!','@',']','#','$','%','^','&','*'};
+	boolean cap = false, lower=false, special=false, num=false;
+	for(int i=0; i<pass.length; i++) {
+	    if(Character.isUpperCase(pass[i]))
+		cap = true;
+	    if(Character.isLowerCase(pass[i]))
+		lower = true;
+	    if(Character.isDigit(pass[i]))
+		num = true;
+	    for (Character c : specialCh) {
+		if (pass[i] == c)
+		    special = true;
+	    }
+	}
+	
+	return cap && lower && special && num;
+    }
+    private static boolean username(String urnm) {
+	if(urnm.length() < 5 || urnm.length() > 30) 
+	    return false;
+	Path path = Paths.get("Program Files/"+urnm+".file");
+	if (Files.exists(path)) 
+	    return false;
+	return true;
+    }
+    
+    public static void CreateUser(Container pane, JFrame frame, ArrayList<JTextField> fields, ArrayList<JPasswordField> fields1, JFrame old) throws IOException {
+	if(username(fields.get(0).getText())&&!fields.get(0).getText().isEmpty()){
+	    if(Arrays.equals(fields1.get(0).getPassword(), fields1.get(1).getPassword())){
+		if(isValid(fields1.get(0).getPassword())){
+		    if(!fields.get(1).getText().isEmpty()&&fields.get(1).getText().length()>9&&fields.get(1).getText().length()<=30) {
+			if(!Arrays.equals(fields1.get(0).getPassword(), fields1.get(2).getPassword())) {
+			    if(isValid(fields1.get(2).getPassword())) {
+				try {
+				    User(fields.get(0).getText(), fields1.get(0).getPassword(), fields.get(1).getText(), fields1.get(2).getPassword());
+				    JOptionPane.showMessageDialog(pane,"Account Successfully Created");
+				    Welcome.resetCount();
+				    old.setVisible(true);
+				    frame.dispose();
+				} catch (NoSuchAlgorithmException | FileNotFoundException | UnsupportedEncodingException
+					 | InvalidKeySpecException e1) {
+				    JOptionPane.showMessageDialog(pane,"Account NOT Created!");
+				    // 		TODO Auto-generated catch block
+				    e1.printStackTrace();
+				}
+			    }
+			    else 
+				JOptionPane.showMessageDialog(pane, "Please provide the required format for the Security Answer.", "Invalid Security Answer!", JOptionPane.ERROR_MESSAGE);
+			}
+			else 
+			    JOptionPane.showMessageDialog(pane, "Please provide different Sequrity Answer than your password.", "Redundant Passwords!", JOptionPane.ERROR_MESSAGE);
+		    }
+		    else
+			JOptionPane.showMessageDialog(pane, "Please provide the required format for the Security Question.", "Security Question Error!", JOptionPane.ERROR_MESSAGE);
+		}
+		else
+		    JOptionPane.showMessageDialog(pane, "Please provide the required format for your password.", "Invalid Password!", JOptionPane.ERROR_MESSAGE);
+	    }
+	    else
+		JOptionPane.showMessageDialog(pane, "Passwords must match.", "Password mismatch!", JOptionPane.ERROR_MESSAGE);
+	}		
+	else 
+	    JOptionPane.showMessageDialog(pane, "Please provide a unique username with specified length.", "Invalid Username!", JOptionPane.ERROR_MESSAGE);
+    }
+    
+    private static String generateString() {
+	int count = 40;
+	String ALPHA_NUMERIC_STRING = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+	StringBuilder builder = new StringBuilder();
+	while (count-- != 0) {
+	    int character = (int)(Math.random()*ALPHA_NUMERIC_STRING.length());
+	    builder.append(ALPHA_NUMERIC_STRING.charAt(character));
+	}
+	return builder.toString();
+    }
+}
