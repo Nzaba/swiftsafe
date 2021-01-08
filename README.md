@@ -3,7 +3,7 @@
 Swift Safe Store is a safety utility that helps protect your passwords, credit card details and documents by using encryption.
 
 Account Safety:
-To ensure highest security, the following requirements apply to the your account login details:
+To ensure highest security, the following requirements apply to your account login details:
 Your username must be between 5 and 30 characters and must not already be initialized in the system. We urge you to provide a strong password for your account. For your security, we incorporated these requirements for the password and answer to the security question. Your password and security answer must be between 8 and 25 characters, and contain:
  - one capital letter
  - one lowercase letter
