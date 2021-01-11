@@ -1,4 +1,4 @@
-# swiftsafe
+# SwiftSafe
 
 Swift Safe Store is a safety utility that helps protect your passwords, credit card details and documents by using encryption.
 
